@@ -1,0 +1,92 @@
+
+This is Palm::Progect, a module for reading and manipulating
+Palm Progect databases.
+
+Progect is a hierarchical todo list/organizer/project manager,
+and is available at
+
+    http://progect.sourceforge.net/.
+
+Progect itself is free software, released under the GPL.
+
+The Palm::Progect bundle includes a command line utility called
+progconv, which converts back and forth between the Progect PDB format
+and a simple text representation:
+
+
+    [x] Level 1 Todo item
+        [10%] Child (progress)
+            . Child of Child (informational)
+
+    [80%] (31/12/2001) Progress item
+        [ ] Unticked action item
+
+This format is similar to the format that Progect's own built-in
+exporter uses.  However, progconv supports almost all of Progect's
+fields, including dates, categories, ToDo links and notes. See the
+included docs for notes.
+
+The progconv program also converts to and from CSV (Comma Separated
+Values) files, which is a format most useful for exchanging data with
+spreadsheets and databases.
+
+Prerequisites
+-------------
+
+1) p5-Palm (Palm::PDB)
+
+   Andrew Arensburger's great suite of modules for manipulating
+   palm database files.
+
+2) Text::CSV_XS
+
+   Only if you intend to import from or export to the CSV format.
+
+
+Installing
+----------
+
+On Unix systems install Palm::Progect as you would any other
+perl module:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+To read the docs, type:
+
+    perldoc Palm::Progect
+or:
+    perldoc progconv
+
+
+On systems without make (e.g. Windows), first copy Progect.pm
+into your local library directory (e.g. C:\PERL\lib\site\Palm)
+and then place progconv somewhere in your PATH, so you can
+run it via:
+
+    perl -S progconv ...
+
+To read the docs, run them through the pod2html program:
+
+    perl -S pod2html.pl Progect.pm > Progect.html
+    perl -S pod2html.pl progconv > progconv.html
+
+And then open the html files in your web browser.
+
+Homepage
+--------
+
+    http://www.occamstoothbrush.com/perl
+
+Author
+------
+
+Michael Graham <mag-perl@occamstoothbrush.com>
+
+Copyright (C) 2001 Michael Graham.  All rights reserved.
+This program is free software.  You can use, modify,
+and distribute it under the same terms as Perl itself.
+
+

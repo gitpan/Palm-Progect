@@ -1,0 +1,1048 @@
+#!/usr/bin/perl -w
+
+use strict;
+use 5.004;
+use Getopt::Long;
+use vars qw( $VERSION %PDBHandlers %PRCHandlers $hexdump );
+
+use strict;
+use Palm::PDB;
+use Palm::Raw;
+use Palm::Progect;
+use Getopt::Long;
+use Text::Wrap;
+use Text::Tabs qw();
+use Time::Local;
+
+# A hack to disable tab insertion by Text::Wrap
+
+sub dummy { return @_ if wantarray; return $_[0]; }
+*Text::Tabs::expand   = *dummy;
+*Text::Tabs::unexpand = *dummy;
+*Text::Wrap::expand   = *dummy;
+*Text::Wrap::unexpand = *dummy;
+
+use constant TYPE_TXT => 1;
+use constant TYPE_PDB => 2;
+use constant TYPE_CSV => 3;
+
+my $Usage = <<'EOF';
+progconv - converts between .txt, .csv and Progect's PDB format.
+Usage: perl progconv [options] sourcefile targetfile
+
+Options:
+  --tabstop=n        Treat tabs as n spaces wide (default is 8)
+  --use-spaces       Use spaces to indent instead of tabs
+  --date-format=s    Any combination of dd, mm, yy, yyyy (default is dd/mm/yy)
+  --columns=n        Wrap text to fit on n columns (defaults to 80)
+  --csv-sep=c        Use character c as the csv separator (defaults to ;)
+  --csv-eol-pc       Use \r\n as the csv line terminator (the default)
+  --csv-eol-unix     Use \n as the csv line terminator
+  --csv-eol-mac      Use \r the csv line terminator
+  --csv-quote-char=c Use character c as the csv quote char (defaults to ")
+  --quiet            Suppress informational messages
+EOF
+
+my %Options = (
+    Tabstop          => 8,
+    Fill_With_Spaces => '',
+    Date_Format      => 'yyyy/mm/dd',
+    Columns          => 80,
+    Quiet            => '',
+    CSV_Seperator    => ';',
+    CSV_PC_EOL       => 1,
+    CSV_Unix_EOL     => 0,
+    CSV_Mac_EOL      => 0,
+    CSV_Quote        => '"',
+);
+
+GetOptions(
+    'tabstop=i'        => \$Options{Tabstop},
+    'use-spaces'       => \$Options{Fill_With_Spaces},
+    'date-format=s'    => \$Options{Date_Format},
+    'columns'          => \$Options{Columns},
+    'csv-sep=s'        => \$Options{CSV_Separator},
+    'csv-eol-pc'       => \$Options{CSV_PC_EOL},
+    'csv-eol-unix'     => \$Options{CSV_Unix_EOL},
+    'csv-eol-mac'      => \$Options{CSV_Mac_EOL},
+    'csv-quote-char=s' => \$Options{CSV_Quote},
+    'quiet'            => \$Options{Quiet},
+    'help'             => \$Options{Show_Help},
+);
+
+die $Usage if $Options{Show_Help};
+
+my @CSV_Fields = qw(
+    level
+    description
+    priority
+    completed
+    isAction
+    isProgress
+    isNumeric
+    isInfo
+    hasToDo
+    numericActual
+    numericLimit
+    dateDue
+    category
+    opened
+    description
+    note
+);
+
+my ($Source, $Target) = @ARGV;
+
+$Source or die $Usage;
+-f $Source or die $Usage;
+
+my $pdb = new Palm::PDB;
+
+my ($Source_Type, $Target_Type);
+$Source_Type = file_type($Source);
+
+# Dump text to STDOUT if Target filename not specified
+if ($Target) {
+    $Target_Type = file_type($Target);
+}
+else {
+    $Target_Type = TYPE_TXT;
+}
+
+# Yes, I could have made all this polymorphic and OO and such,
+# but I'm impatient!
+
+my $Data;
+
+if ($Source_Type == TYPE_PDB) {
+    $Data = load_pdb($Source, \%Options);
+}
+elsif ($Source_Type == TYPE_CSV) {
+    require Text::CSV_XS;
+    require IO::File;
+    $Data = load_csv($Source, \@CSV_Fields, \%Options);
+}
+elsif ($Source_Type == TYPE_TXT) {
+    $Data = load_txt($Source, \%Options);
+}
+else {
+    die "Unknown type for source file: $Source\n";
+}
+
+
+if ($Target_Type == TYPE_PDB) {
+    save_pdb($Target, $Data, \%Options);
+}
+elsif ($Target_Type == TYPE_CSV) {
+    require Text::CSV_XS;
+    save_csv($Target, $Data, \@CSV_Fields, \%Options);
+}
+elsif ($Target_Type == TYPE_TXT) {
+    save_txt($Target, $Data, \%Options);
+}
+else {
+    die "Unknown type for target file: $Target\n";
+}
+
+sub load_pdb {
+    my ($filename, $options) = @_;
+
+    print STDERR "Loading PDB Progect format from $filename\n" unless $options->{Quiet};
+    $pdb->Load($filename);
+
+    my $data;
+
+    my @categories = map { $_->{name} } @{$pdb->{'appinfo'}{'categories'}};
+
+    $data->{'records'} = $pdb->{'records'};
+
+    $data->{categories} = \@categories;
+
+    return $data;
+}
+
+sub load_csv {
+    my ($filename, $csv_fields, $options) = @_;
+    # die "Sorry - CSV import not yet implemented\n";
+    print STDERR "Loading CSV format from $filename\n" unless $options->{Quiet};
+
+    my %legal_csv_fields = map { $_ => 1 } @$csv_fields;
+
+    my $data = {
+        categories => [],
+        records    => [],
+    };
+
+    my $max_cat = 0;
+    my %categories = map { $_ => $max_cat++ } @{$data->{categories}};
+    $categories{'Unfiled'} = 0;
+
+    local ($_);
+    my $fh = new IO::File;
+    $fh->open("< $filename") or die "Can't open $filename for reading: $!\n";
+
+    my $eol;
+    $eol = "\r\n" if $options->{CSV_PC_EOL};
+    $eol = "\n"   if $options->{CSV_Unix_EOL};
+    $eol = "\r"   if $options->{CSV_Mac_EOL};
+
+    my $csv = Text::CSV_XS->new({
+        eol        => $eol,
+        sep_char   => $options->{CSV_Separator},
+        quote_char => $options->{CSV_Quote},
+        binary     => 1,
+    });
+
+    my @headings;
+    while (my $fields = $csv->getline($fh)) {
+
+        # strip out illegal nulls
+        s/\0//g foreach @$fields;
+
+        last if !@$fields;
+
+        unless (@headings) {
+            @headings = @$fields;
+            my @bad_headings = grep { !$legal_csv_fields{$_} } @headings;
+            if (@bad_headings > 0) {
+                die "Bad heading name(s) in CSV file: (" . (join ", ", @bad_headings) . ")\n";
+            }
+            next;
+        }
+
+        my %record;
+
+        # map each field to its heading
+
+        for (my $i = 0; $i < @headings; $i++) {
+            my $heading = $headings[$i];
+            my $field   = $fields->[$i];
+
+            if ($heading eq 'dateDue') {
+                $record{$heading} = parse_date($field, $options->{Date_Format});
+                $record{hasDueDate} = 1 if ($field && $record{$heading});
+            }
+            elsif ($heading eq 'category') {
+                if ($field) {
+                    if ($categories{$field}) {
+                        $record{$heading} = $categories{$field};
+                    }
+                    else {
+                        $max_cat++;
+                        $categories{$field} = $max_cat;
+                        $record{$heading}   = $max_cat;
+                    }
+                }
+                else {
+                    $record{$heading}   = 0;
+                }
+            }
+            else {
+                $record{$heading} = $field;
+            }
+        }
+        push @{$data->{'records'}}, \%record;
+    }
+
+    $fh->close;
+
+    foreach my $cat (keys %categories) {
+        $data->{'categories'}[$categories{$cat}] = $cat;
+    }
+
+    return $data;
+
+}
+
+sub load_txt {
+    my ($filename, $options) = @_;
+    local (*FH, $_);
+
+    print STDERR "Loading Text format from $filename\n" unless $options->{Quiet};
+
+    open FH, $filename or die "Can't open $filename for reading: $!\n";
+
+    my $data = {
+        categories => [],
+        records    => [],
+    };
+
+    my $max_cat = 0;
+    my %categories = map { $_ => $max_cat++ } @{$data->{categories}};
+    $categories{'Unfiled'} = 0;
+
+    my $multiline_desc_mode = 0;
+    my $multiline_note_mode = 0;
+    my %record;
+
+    my (@description_lines, @note_lines);
+    while (<FH>) {
+        chomp;
+        next unless /\S/;
+        # next if /^\s*#/;
+
+        if ($multiline_desc_mode) {
+            if (/^(\s*)(.*)>>/) {
+
+                # End of description.  Trim the whitespace
+                # from the start of each line, and pack
+                # them all up.
+
+                my $whitespace = $1;
+                my $desc_line  = $2;
+
+                if ($desc_line) {
+                    push @description_lines, $desc_line;
+                }
+
+                if ($whitespace) {
+                    @description_lines = trim_lines($whitespace, $options->{Tabstop}, @description_lines);
+                }
+
+                # Append here, because we might have already stashed the
+                # first line of the description
+
+                $record{description} .= join "\n", @description_lines;
+                @description_lines = ();
+
+                $multiline_desc_mode = 0;
+
+                if (/>>\s*<<(.*)/) {
+                    push @note_lines, $1;
+                    $multiline_note_mode = 1;
+                }
+                else {
+                    # End of Record - pack it up!
+                    push @{$data->{'records'}}, { %record };
+                    %record = ();
+
+                }
+            }
+            else {
+                push @description_lines, $_;
+            }
+
+        }
+        elsif ($multiline_note_mode) {
+            if (/^(\s*)(.*)>>/) {
+
+                # End of note.  Trim the whitespace
+                # from the start of each line, and pack
+                # them all up.
+
+                my $whitespace = $1;
+                my $note_line  = $2;
+
+                if ($note_line) {
+                    push @note_lines, $note_line;
+                }
+
+                if ($whitespace) {
+                    @note_lines = trim_lines($whitespace, $options->{Tabstop}, @note_lines);
+                }
+
+                $record{note}    = join "\n", @note_lines;
+                $record{hasNote} = 1;
+                @note_lines      = 0;
+
+                $multiline_note_mode = 0;
+
+                # End of Record - pack it up!
+                push @{$data->{'records'}}, { %record };
+                %record = ();
+            }
+            else {
+                push @note_lines, $_;
+            }
+        }
+        elsif (m~^
+              (\s*)                # Optional Whitespace - save it to calc level
+              (
+              (?:\[.*?\])|         # bracketed sequence  - e.g. [], [x], [80%] or [4/5]
+              (?:\<.*?\>)|         # or todo brackets    - e.g. < >, <x>
+              (?:\.)               # or dot for info     - e.g. . some info
+              )
+              \s*
+              (?:\s*\((.*?)\s*\))? # paren sequence      - e.g. (1/2/2001)
+              \s*
+              (?:\s*\{(.*?)\}\s*)? # braced sequence     - e.g. {My Category}
+              \s*
+              (<<)?                # optional start of multiline description
+              \s*
+              (.*?)                # description text
+              \s*
+              (<<\s*(.*))?         # optional start of multiline note
+              \s*
+            $~x           ) {
+
+            my ($whitespace, $type_info, $date, $category,
+                $multi_desc_start, $description, $multi_note_start, $note)
+                = ($1, $2, $3, $4, $5, $6, $7, $8);
+
+            if ($category) {
+                if (exists $categories{$category}) {
+                    $record{category} = $categories{$category};
+                }
+                else {
+                    $max_cat++;
+                    $record{category} = $categories{$category} = $max_cat;
+                }
+            }
+
+            if ($type_info) {
+
+                if ($type_info =~ /^\.$/) {
+                    $record{isInfo}  = 1;
+                }
+                else {
+                    $record{isAction}  = 1;
+                    $record{completed} = 0;
+
+                    # Strip brackets
+                    if ($type_info =~ /^
+                                       \s*
+                                       (\[|\<)   # Open bracket: [ or <
+                                       \s*
+                                       (.*?)
+                                       \s*
+                                       (?:\]|\>) # close bracket: ] or >
+                                       \s*
+                                       $/x) {
+
+                        my $bracket_type = $1;
+                        my $contents     = $2;
+
+                        if (!$contents) {
+                            $record{isAction}  = 1;
+                            $record{completed} = 0;
+                        }
+                        elsif ($contents =~ /^x$/i) {
+                            $record{isAction}  = 1;
+                            $record{completed} = 1;
+                        }
+                        elsif ($contents =~ /^(\d+)%$/) {
+                            $record{isAction}   = undef;
+                            $record{isProgress} = 1;
+                            $record{completed}   = $1;
+                        }
+                        elsif ($contents =~ m{^(\d+)/(\d+)$}) {
+                            $record{isAction}      = undef;
+                            $record{isNumeric}     = 1;
+                            $record{numericActual} = $1;
+                            $record{numericLimit}  = $2;
+                        }
+                        if ($record{isAction} and $bracket_type eq '<') {
+                            $record{hasToDo} = 1;
+                        }
+                    }
+                }
+            }
+            if ($date) {
+                $record{dateDue}    = parse_date($date,$options->{Date_Format});
+                $record{hasDueDate} = 1;
+            }
+
+            my $indent_columns = ($whitespace =~ tr/\t/\t/) * $options->{Tabstop}
+                               + ($whitespace =~ tr/ / /);
+
+            if ($options->{Tabstop}) {
+                $record{level} = int($indent_columns/$options->{Tabstop}) + 1;
+            }
+
+            $record{description} = $description;
+
+            if ($multi_desc_start) {
+                @description_lines = ($description);
+                $multiline_desc_mode = 1;
+            }
+            elsif ($multi_note_start) {
+                @note_lines = ();
+                $multiline_note_mode = 1;
+            }
+            else {
+                push @{$data->{'records'}}, { %record };
+                %record = ();
+            }
+        }
+        else {
+            next if /^\s*#/;
+            warn "line not matched: $_\n";
+        }
+
+    }
+
+    close FH;
+
+    foreach my $cat (keys %categories) {
+        $data->{'categories'}[$categories{$cat}] = $cat;
+    }
+
+    return $data;
+}
+
+sub save_pdb {
+    my ($filename, $data, $options) = @_;
+
+    print STDERR "Saving PDB Progect format to $filename\n" unless $options->{Quiet};
+    my $pdb = Palm::Progect->new();
+
+    my $appinfo = {};
+    Palm::StdAppInfo::seed_StdAppInfo($appinfo);
+    my $start_category_id = $appinfo->{lastUniqueID};
+
+    my @categories = grep { $_ } @{$data->{'categories'}};
+
+    # Insert the "root record" if necessary
+    unless ($data->{'records'}[0]{'level'} == 0) {
+        unshift @{$data->{'records'}}, $pdb->new_Root_Record();
+    }
+
+    my $i;
+    for ($i = 0; $i < @categories; $i++) {
+        $appinfo->{'categories'}[$i] = {
+            name    => $categories[$i],
+            id      => $i ? $start_category_id + $i : 0,
+            renamed => 0,
+        };
+    }
+
+    $appinfo->{lastUniqueID} = $start_category_id + $i;
+
+    $data->{'records'} = Palm::Progect->Repair_Tree($data->{'records'});
+
+    $pdb->{'name'}    = db_name_from_filename($filename);
+    $pdb->{'records'} = $data->{'records'};
+    $pdb->{'appinfo'} = $appinfo;
+
+    # Turn off warnings for the Palm::* modules
+    local $^W;
+    $pdb->Write($filename);
+
+}
+
+sub save_csv {
+    my ($filename, $data, $csv_fields, $options) = @_;
+    # die "Sorry - CSV export not yet implemented\n";
+    print STDERR "Saving CSV format to $filename\n" unless $options->{Quiet};
+
+    local (*FH);
+
+    open FH, ">$filename" or die "Can't clobber $filename: $!\n";
+
+    my $eol;
+    $eol = "\r\n" if $options->{CSV_PC_EOL};
+    $eol = "\n"   if $options->{CSV_Unix_EOL};
+    $eol = "\r"   if $options->{CSV_Mac_EOL};
+
+    my $csv = Text::CSV_XS->new({
+        eol        => $eol,
+        sep_char   => $options->{CSV_Separator},
+        quote_char => $options->{CSV_Quote},
+        binary     => 1,
+    });
+
+    $csv->combine(@$csv_fields);
+    print FH $csv->string;
+
+    my $i = 0;
+    foreach my $record (@{$data->{'records'}}) {
+        $i++;
+        # Skip the invisible root record
+        next if $i == 1 and not $record->{level};
+
+        my @row;
+        foreach my $field (@$csv_fields) {
+
+            if ($field eq 'dateDue') {
+                if ($record->{hasDueDate}) {
+                    push @row, scalar(format_date($record->{dateDue}, $options->{Date_Format}));
+                }
+                else {
+                    push @row, undef;
+                }
+            }
+            elsif ($field eq 'category' and $record->{category}) {
+                push @row, "$data->{'categories'}[$record->{category}]";
+            }
+            else {
+                push @row, $record->{$field};
+            }
+        }
+        $csv->combine(@row);
+
+        print FH $csv->string;
+    }
+    close FH;
+}
+
+sub save_txt {
+    my ($filename, $data, $options) = @_;
+
+    local (*FH);
+
+    if ($filename) {
+        print STDERR "Saving Text format to $filename\n" unless $options->{Quiet};
+        open FH, ">$filename" or die "Can't clobber $filename: $!\n";
+    }
+    else {
+        print STDERR "Dumping Text format to STDOUT\n" unless $options->{Quiet};
+        open FH, ">&STDOUT" or die "Can't dup STDOUT: $!\n";
+    }
+
+    my ($indent);
+    if ($options->{Fill_With_Spaces}) {
+        $indent = ' ' x $options->{Tabstop};
+    }
+    else {
+        $indent = "\t";
+    }
+
+    my $i = 0;
+    foreach my $record (@{$data->{'records'}}) {
+        $i++;
+        # Skip the invisible root record
+        next if $i == 1 and not $record->{level};
+
+        if ($record->{level} == 1) {
+            print FH "\n";
+        }
+
+        my $record_indent = $indent x ($record->{level} - 1);
+        $Text::Wrap::Columns = 80;  # avoid the 'used only once warning'
+        $Text::Wrap::Columns = $options->{Columns} - $options->{Tabstop} * ($record->{level} - 1);
+        $Text::Tabs::tabstop = $options->{Tabstop};
+
+        my @line;
+
+        if ($record->{isAction}) {
+            if ($record->{hasToDo}) {
+                if ($record->{completed}) {
+                    push @line, '<x>';
+                }
+                else {
+                    push @line, '< >';
+                }
+            }
+            else {
+                if ($record->{completed}) {
+                    push @line, '[x]';
+                }
+                else {
+                    push @line, '[ ]';
+                }
+            }
+        }
+        elsif ($record->{isProgress}) {
+            push @line, "[$record->{completed}%]";
+        }
+        elsif ($record->{isNumeric}) {
+            push @line, "[" . ($record->{numericActual} . '/' . $record->{numericLimit}) . "]";
+        }
+        elsif ($record->{isInfo}) {
+            push @line, ".";
+        }
+
+        if ($record->{hasDueDate}) {
+            push @line, "(" . format_date($record->{dateDue}, $options->{Date_Format}) . ")";
+        }
+
+        if ($record->{category}) {
+            push @line, "{$data->{'categories'}[$record->{category}]}";
+        }
+
+        my $desc = $record->{description};
+        my $para_indent = $record_indent.$indent;
+
+        $desc =~ s/\n/ /g;
+
+        push @line, $desc;
+
+        if ($record->{note}) {
+            my $note = $record->{note};
+            if ($options->{Columns}) {
+                $note = wrap('', $para_indent, $note);
+            }
+            $note = "<<\n$para_indent$note\n$para_indent>>";
+            $note = expand_tabs($note, $options->{Tabstop}) if $options->{Fill_With_Spaces};
+            push @line, $note;
+        }
+
+        print FH "${record_indent}", join ' ', @line;
+
+        print FH "\n";
+    }
+    print FH "\n";
+
+    close FH;
+}
+
+my %Date_Cache;
+sub format_date {
+    my ($time, $date_format) = @_;
+
+    $time ||= 0;
+
+    return $Date_Cache{$time . $date_format} if exists $Date_Cache{$time . $date_format};
+
+    my ($day, $month, $year) = (localtime $time)[3,4,5];
+
+    $day   = sprintf '%02d', $day;
+    $month = sprintf '%02d', $month + 1;
+    $year  = sprintf '%04d', $year  + 1900;
+    my $shortyear = substr $year, -2, 2;
+
+    my $date_string = $date_format;
+
+    $date_string =~ s/dd/$day/gi;
+    $date_string =~ s/mm/$month/gi;
+    $date_string =~ s/yyyy/$year/gi;
+    $date_string =~ s/yy/$shortyear/gi;
+
+    return $Date_Cache{$time . $date_format} = $date_string;
+}
+
+sub file_type {
+    my $filename = shift;
+    my $extension;
+
+    if ($filename =~ /\.([^.]*)$/) {
+        $extension = $1;
+    }
+
+    if ($extension =~ /^txt$/i) {
+        return TYPE_TXT;
+    }
+    elsif ($extension =~ /^csv$/i) {
+        return TYPE_CSV;
+    }
+    elsif ($extension =~ /^pdb$/i) {
+        return TYPE_PDB;
+    }
+    return;
+}
+
+sub db_name_from_filename {
+    my $filename = shift;
+    $filename =~ tr{\\}{/};
+    $filename =~ tr{:}{/};
+    $filename = (split m{/}, $filename)[-1];
+    $filename =~ s/^lbPG-//;
+    $filename =~ s/\..*?$//;
+    return $filename;
+}
+
+sub expand_tabs {
+    my ($string, $tabstop) = @_;
+    $string =~ s/\t/' ' x $tabstop/ge;
+    return $string;
+}
+
+sub trim_lines {
+    my ($whitespace, $tabstop, @lines) = @_;
+
+    $whitespace = expand_tabs($whitespace, $tabstop);
+
+    foreach my $line (@lines) {
+        $line = expand_tabs($line, $tabstop);
+        $line =~ s/^$whitespace//;
+    }
+    return @lines;
+}
+
+sub parse_date {
+    my ($date_string, $date_format) = @_;
+
+    my %values;
+
+    # This parser is very convoluted.
+    # For each token, we build a regexp
+    # that matches it and all other tokens in the
+    # format string, but we put parens around
+    # the single token we're interested in
+    # so we can capture its value.
+    #
+    # e.g. (assuming template of dd/mm/yy)
+    #   first regex is  \d\d/\d\d/(\d\d)
+    #   second regex is \d\d/(\d\d)/\d\d
+    #   etc.
+    #
+    # So we build a regex for each token,
+    # then run them all in sequence,
+    # extracting one token for each regex
+    #
+    # We have to do 16 searches to construct
+    # the regexes and then we also have to
+    # search the date string 4 times.
+    #
+    # I'm sure there are better ways of
+    # doing this.
+
+    my @tokens = ('yyyy','mm','dd','yy');
+    foreach my $token (@tokens) {
+        my $format = $date_format;
+        $format =~ s/$token/'(' . '\\d' x length($token) . ')'/ge;
+        foreach my $token (@tokens) {
+            $format =~ s/$token/'\\d' x length($token)/ge;
+        }
+        if ($date_string =~ /^$format$/) {
+            $values{$token} = $1;
+        }
+    }
+
+    my $day   = $values{'dd'};
+    my $month = $values{'mm'};
+    my $year  = $values{'yyyy'};
+
+    # Y2K complient, but not Y2K+50 or Y2K-50 complient
+    # no one forcing you to use two dates, you know.
+    if ($values{'yy'} and $values{'yy'} < 50) {
+        $values{'yy'} += 2000;
+    }
+    $year   ||= $values{'yy'};
+
+    my $date;
+    if ($day and $month and $year) {
+        eval {
+            $date = timelocal(0,0,0,$day,$month-1,$year);
+        };
+    }
+    return $date;
+}
+
+__END__
+
+=head1 NAME
+
+progconv - convert between .txt, .csv and Palm Progect's PDB format.
+
+=head1 SYNOPSIS
+
+Export from a .pdb database to a text representation:
+
+    perl progconv lbPG-MyProgect.pdb MyProgect.txt
+
+Import from a text tree back into a database:
+
+    perl progconv MyProgect.txt lbPG-MyProgect.pdb
+
+You can also convert to/from CSV files:
+
+    perl progconv lbPG-MyProgect.pdb MyProgect.csv
+    perl progconv MyProgect.csv MyProgect.txt
+    perl progconv MyProgect.csv lbPG-MyProgect.pdb
+
+=head1 DESCRIPTION
+
+progconv is a program you run on your desktop computer
+to allow you to import to and export from Palm Progect
+database files.
+
+For its text format, it uses a layout very similar to
+the one used by Progect's own built-in converter:
+
+    [x] Level 1 Todo item
+        [10%] Child (progress)
+            . Child of Child (informational)
+
+    [80%] (31/12/2001) Progress item
+        [ ] Unticked action item
+
+Almost all of Progect's fields are supported using this
+format, including categories, ToDo links and notes.
+
+See below under L<PROGCONV TEXT FORMAT>
+
+For its CSV format it uses a simple table of records, with
+indent level being one of the fields.  See below under
+L<PROGCONV CSV FORMAT>.
+
+This program was written on Windows.  It was tested on Windows 95
+with perl 5.005 and perl 5.6.1, and on Linux (Redhat 7.1)
+with perl 5.6.0 and perl 5.6.1.
+
+=head1 OPTIONS
+
+=over 4
+
+=item --tabstop=n
+
+Treat tabs as n columns wide (default is 8)
+
+=item --use-spaces
+
+By default, progconv uses tabs to indent records.
+With this C<--use-spaces> option, it will use spaces
+instead, using C<--tabstop> spaces per indent level.
+
+=item --date-format
+
+The input and output format for dates.  You can have any text
+here so long as it includes some combination of dd, mm, yy, yyyy.
+Using words for months at this point is NOT supported.
+
+The default is yyyy/mm/dd, so nobody can accuse me of being Y2K
+non-complient.  If you want to use dd/mm/yy (which is how the
+Progect program itself seems to currently export things on my Palm),
+then you can use:
+
+    --date-format=dd/mm/yy
+
+=item --columns=n
+
+For multiline descriptions and notes, progect will wrap text to
+fit the screen.  Use this option to tell how wide the screen is.
+The default is 80.  To disable wrapping, use C<--columns=0>
+
+=item --csv-sep=c
+
+Use character C<c> as the csv separator (defaults to C<;>)
+
+=item --csv-eol-pc
+
+Use C<\r\n> as the csv line terminator (the default)
+
+=item --csv-eol-unix
+
+Use C<\n> as the csv line terminator
+
+=item --csv-eol-mac
+
+Use C<\r> the csv line terminator
+
+=item --csv-quote-char=c
+
+Use character C<c> as the csv quote char (defaults to C<">)
+
+=item --quiet
+
+Suppress informational messages
+
+=back
+
+=head1 PROGCONV TEXT FORMAT
+
+Here is a summary of the various types of records:
+
+    [ ] action type
+    [x] completed action type
+    < > action type with todo link
+    <x> completed action type with todo link
+
+    [80%] progress type
+    [4/5] numeric type
+
+    . info type
+
+    [ ] [5] action type with priority
+    [ ] (15/7/2001) action type with date
+
+    [80%] [5] (15/7/2001) {category} progress type with priority and date and category
+
+    [80%] [5] (15/7/2001) {category} progress type with priority and date and category <<
+        Multi-Line note
+        for this item
+        >>
+
+
+=head1 PROGCONV CSV FORMAT
+
+The CSV format allows for basic import/export with spreadsheet programs.
+The CSV file does not look like a tree structure; instead, there is a C<level>
+column, which indicates the indent level for the current row.
+
+The columns in the format are:
+
+=over 4
+
+=item level
+
+The indent level of the record.
+
+=item description
+
+=item priority
+
+The priority of the record from 1 to 5, or 0 for no priority.
+
+=item isAction
+
+=item isProgress
+
+=item isNumeric
+
+=item isInfo
+
+Any record can have one (and only one) of the above types.
+
+If you are going to change the type of a record, remember
+to set all the other types to false:
+
+    isAction isProgress isNumeric isInfo
+    0        0          0         1
+
+=item completed
+
+Completed has different values depending upon the type of record.
+For action items, it is either 1 or 0, for complete or not complete.
+
+For Progress items, it is a number between 1 and 100, indicating a
+percentage.
+
+For Numeric items it is a number between 1 and 100 indicating the
+the integer percentage of the C<numericActual> value divided by
+the C<numericLimit> value.
+
+=item numericActual
+
+The numerator of a numeric record.  If the numeric value of
+a record is C<4/5>, then the C<numericActual> value is C<4>.
+
+=item numericLimit
+
+The denominator of a numeric record.  If the numeric value of
+a record is C<4/5>, then the C<numericLimit> value is C<5>.
+
+=item DateDue
+
+This is a date in the format specified on the command line with the
+C<--date-format> option
+
+=item category
+
+=item opened
+
+=item description
+
+=item note
+
+Additionally, see the L<--csv-sep >, L<--csv-eol-pc >, L<--csv-eol-unix >,
+L<--csv-eol-mac > and L<--csv-quote-char > options.
+
+=back
+
+=head1 CAVEATS
+
+Using a two digit date format will fail for dates before 1950
+or after 2050 :).
+
+=head1 AUTHOR
+
+Michael Graham E<lt>mag-perl@occamstoothbrush.comE<gt>
+
+Copyright (C) 2001 Michael Graham.  All rights reserved.
+This program is free software.  You can use, modify, and
+distribute it under the same terms as Perl itself.
+
+The latest version of this program can be found on http://www.occamstoothbrush.com/perl/
+
+=head1 SEE ALSO
+
+http:://progect.sourceforge.net/
+
+Palm::Progect
+
+Palm::PDB
+
+Text::CSV_XS
+
+=cut
