@@ -372,7 +372,7 @@ sub _pack_raw_record {
     if ($self->date_due) {
         my ($day, $month, $year) = (localtime $self->date_due)[3,4,5];
 
-        if ($day && $month && $year) {
+        if ($day && $year) {
             my $origdate = ($year + 1900).'/'.($month+1)."/$day";
             $year = $year + 1900 - 1904;
             $month = $month + 1;

@@ -1,5 +1,14 @@
 Revision history for Perl extension Palm::Progect.
 
+[2.0.1] 2002/06/01
+    - Fixed a bug where dates in January did not get stored properly
+      (thanks to Frank Meineke for spotting this one)
+
+    - Fixed the docs to note that version 1.2.4 of p5-palm is required
+
+    - Attempt to automatically require version 1.2.4 of p5-palm in
+      Makefile.PL
+
 [2.0.0] 2002/04/28
     ** This Major internal rewrite adds new features and creates
        a few incompatibilities. See upgrade_2.0.txt for details. **

@@ -49,10 +49,14 @@ All of the following required modules are available on CPAN
 (http://search.cpan.org/).  If you don't know how to install
 Perl modules, see "How to Install Perl Modules" below.
 
-1) p5-Palm (Palm::PDB)
+1) p5-Palm (Palm::PDB) version 1.2.4 or later
 
    Andrew Arensburger's great suite of modules for manipulating
    palm database files.
+
+   It is important to use version 1.2.4 (or later) of p5-palm.
+   See "Checking for the Latest version of p5-palm", below.
+
 
 3) CLASS
 4) Class::Accessor
@@ -176,6 +180,22 @@ not being up to date.  Also, Class::Accessor will fail some of its tests.
 These errors and warnings do not appear to be anything to worry about.
 Palm::Progect still seems to work fine and pass all of its own tests.
 
+Checking for the Latest version of p5-palm
+------------------------------------------
+How to tell what version of p5-palm you have installed:
+
+  * Even though the package version is 1.2.4, each file in the package
+    has it's own version number.
+
+  * The version of Palm/Raw.pm in p5-palm version 1.2.4 is actually 1.8
+    If your version of Palm/Raw.pm is equal to or greater than 1.8
+    then you should be fine.
+
+  * Look at the source to the file Palm/Raw.pm.  There should be a line
+    like:
+        $VERSION = sprintf "%d.%03d", '$Revision: 1.8 $ ' =~ m{(\d+)\.(\d+)};
+
+    In the above example, the version number for Palm/Raw.pm is 1.8
 
 Documentation
 -------------

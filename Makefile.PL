@@ -8,11 +8,11 @@ WriteMakefile(
     'PREREQ_PM'	    => {
         'Palm::PDB'          => '1',
         'Palm::StdAppInfo'   => '1',
-        'Palm::Raw'          => '1',
+        'Palm::Raw'          => '1.008',
         'CLASS'              => '0',
         'Class::Accessor'    => '0',
         'Class::Constructor' => '0',
-    },                              
+    },
     'EXE_FILES'     => [ 'bin/progconv' ],
     'PMLIBDIRS'     => [ 'lib' ],
 );

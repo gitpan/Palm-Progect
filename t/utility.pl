@@ -154,6 +154,7 @@ my @Text_Lines = (
     '    <x> (01/08/2001) Gc1-action,todo link,1aug2001, complete',
     '',
     '[ ] (15/07/2001) Delta,action,not complete',
+    '. (15/01/2002) item with January date',
 );
 
 my @Text_Lines_With_Comments_In_Notes = (
@@ -176,6 +177,7 @@ my @Text_Lines_With_Comments_In_Notes = (
     '    <x> (01/08/2001) Gc1-action,todo link,1aug2001, complete',
     '',
     '[ ] (15/07/2001) Delta,action,not complete',
+    '. (15/01/2002) item with January date',
 );
 
 sub write_sample_txt {
@@ -218,6 +220,7 @@ sub write_sample_csv {
         qq{1,1,1,1,,,,1,,,22/07/2001,Three,,"Gamma, pri1,action,todo link,date 22jul2001,cat three,note,complete,closed","Gamma note\nGamma note -line 2"},
         qq{2,,1,1,,,,1,,,01/08/2001,,,"Gc1-action,todo link,1aug2001, complete",},
         qq{1,,0,1,,,,,,,15/07/2001,,,"Delta,action,not complete",},
+        qq{1,,,,,,1,,,,15/01/2002,,,"item with January date",},
     );
 
     local *FH;

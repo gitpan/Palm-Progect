@@ -10,3 +10,5 @@ TODO:
   (e.g. Given version "30", it would delegate to Prefs v0.30 and
   Records v0.23).  This will be necessary the next time the prefs
   format changes but the Record format stays the same.
+
+* require p5-palm 1.2.4
