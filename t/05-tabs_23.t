@@ -4,8 +4,6 @@ use strict;
 use 5.005;
 use Cwd;
 
-use lib 'mlib';
-
 use Test::More tests => 13;
 
 BEGIN { use_ok 'Palm::Progect' }

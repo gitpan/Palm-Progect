@@ -25,6 +25,7 @@ sub Accessors {
         is_opened
         has_todo
         date_due
+        todo_link_data
     )
 }
 

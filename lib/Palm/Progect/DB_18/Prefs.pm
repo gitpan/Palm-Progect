@@ -65,7 +65,24 @@ sub _init {
 sub categories {
     my $self = shift;
 
-    $self->appinfo->{'categories'} = ref $_[0] eq 'ARRAY'? $_[0] : [ @_ ];
+    my $categories = ref $_[0] eq 'ARRAY'? $_[0] : [ @_ ];
+
+    # Add 'name' field if missing
+    foreach my $cat (@$categories) {
+        $cat->{'name'} = '' unless defined $cat->{'name'};
+    }
+
+    # pad out categories to 16
+    if (@$categories < 16) {
+        my $missing = 16 - @$categories;
+        push @$categories, {
+            'renamed' => 0,
+            'name'    => '',
+            'id'      => 0,
+        } for 1..$missing;
+    }
+
+    $self->appinfo->{'categories'} = $categories;
 }
 
 sub packed_appinfo {
@@ -84,8 +101,6 @@ sub _seed_appinfo {
         other           => $progect_prefs,
     };
 
-    # no warnings;
-    local $^W = undef;
     &Palm::StdAppInfo::seed_StdAppInfo($appinfo);
     $self->appinfo($appinfo);
 }

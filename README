@@ -1,291 +1,286 @@
+NAME
+    progconv - convert between .txt, .csv and Palm Progect's PDB format.
 
-This is Palm::Progect, a module for reading and manipulating
-Palm Progect databases.
+SYNOPSIS
+    Export from a .pdb database to a text representation:
 
-Progect is a hierarchical todo list/organizer/project manager,
-and is available at
+        perl progconv lbPG-MyProgect.pdb MyProgect.txt
 
-    http://progect.sourceforge.net/.
+    Convert a text tree back into a database:
 
-Progect itself is free software, released under the GPL.
+        perl progconv MyProgect.txt lbPG-MyProgect.pdb
 
-The Palm::Progect bundle includes a command line utility called
-progconv, which converts back and forth between the Progect PDB format
-and a simple text representation:
+    You can convert to/from CSV files:
 
-    [x] Level 1 Todo item
-        [10%] Child (progress)
-            . Child of Child (informational)
+        perl progconv lbPG-MyProgect.pdb MyProgect.csv
+        perl progconv MyProgect.csv MyProgect.txt
+        perl progconv MyProgect.csv lbPG-MyProgect.pdb
 
-    [80%] (31/12/2001) Progress item
-        [ ] Unticked action item
+    You can convert between various Progect database versions:
 
-This format is similar to the format that Progect's own built-in
-exporter uses.  However, progconv supports almost all of Progect's
-fields, including dates, priorities, categories, ToDo links and
-notes. See the included docs for notes.
+        perl progconv --output-format=23 MyOldProgect.pdb MyNewProgect.pdb
 
-The progconv program also converts to and from CSV (Comma Separated
-Values) files, which is a format most useful for exchanging data with
-spreadsheets and databases.
+DESCRIPTION
+    "progconv" is a program you run on your desktop computer to allow you to
+    import to and export from Palm Progect database files.
 
-Users can write their own converters for new formats, and these
-converters will integrate into the progconv program.
+    For its text format, it uses a layout very similar to the one used by
+    Progect's own built-in converter:
 
-Version 2.0 of Palm::Progect is a complete rewrite with some new
-features.  See upgrade_2.0.txt for details.
+        [x] Level 1 Todo item
+            [10%] Child (progress)
+                . Child of Child (informational)
 
-Installing
-----------
-First, install the prerequisite Perl Modules (see "Prerequisites",
-below). Next install the Palm::Progect module itself.
+        [80%] (31/12/2001) Progress item
+            [ ] Unticked action item
 
-If you don't know how to install Perl modules, see "How to Install Perl
-Modules" below.
+    Almost all of Progect's fields are supported using this format,
+    including categories, ToDo links and notes.
 
-Prerequisites
--------------
-All of the following required modules are available on CPAN
-(http://search.cpan.org/).  If you don't know how to install
-Perl modules, see "How to Install Perl Modules" below.
+    See below under "PROGCONV TEXT FORMAT"
 
-1) p5-Palm (Palm::PDB) version 1.2.4 or later
+    For its CSV format it uses a simple table of records, with indent level
+    being one of the fields. See below under "PROGCONV CSV FORMAT".
 
-   Andrew Arensburger's great suite of modules for manipulating
-   palm database files.
+    This program was written on Linux (Redhat 7.1). It was tested on Windows
+    98 with perl 5.005 and perl 5.6.1, and on Linux (Redhat 7.1) with perl
+    5.6.0 and perl 5.6.1.
 
-   It is important to use version 1.2.4 (or later) of p5-palm.
-   See "Checking for the Latest version of p5-palm", below.
+OPTIONS
+  General Options
+    --quiet
+        Suppress informational messages
 
+  Conversion Options
+    --input-format=auto|pdb|text|csv
+        The format "progconv" should import from. Either "auto", "pdb",
+        "text", or "csv".
 
-3) CLASS
-4) Class::Accessor
-5) Class::Constructor
+        When "auto" is selected, then "progconv" will guess the file's type
+        based on its extension.
 
-   These three modules provide some of the necessary object-oriented
-   'glue' that holds the Palm::Progect::* modules together.  The first
-   two are by Michael G. Schwern, the last is by me.
+        The default is "auto".
 
-   On earlier versions of Perl (e.g. version 5.005), special care will be
-   required to install Class::Accessor.  See below under "Installing on
-   Earlier Versions of Perl"
+    --output-format=auto|pdb|text|csv
+        The format "progconv" should export to. Either "auto", "pdb",
+        "text", or "csv".
 
-6) Text::CSV_XS
+        When "auto" is selected, then "progconv" will guess the file's type
+        based on its extension.
 
-   This is only required if you intend to import from or export to
-   the CSV format.
+        The default is "auto".
 
+    --input-version=n
+        Ignore the version number stored in the source database, and import
+        it as version "n".
 
-How to Install Perl Modules (on Unix/Linux/etc)
------------------------------------------------
-You can use the 'cpan' command-line utility to install the modules (easy
-to use, but can be tricky to set up).
+        Currently supported versions are 18 (for Progect database version
+        0.18) and 23 (for Progect database version 0.23).
 
-Or you can install the modules manually by doing the following:
+        Progect database version 0.18 was used all the way up until Progect
+        version 0.22, so if you saved a database with Progect 0.22, the
+        database will be a version 0.18 database.
 
-    1) download the module distribution
+    --output-version=n
+        Write the output database in version "n".
 
-    2) unpack it into its own folder, e.g.
+        Currently supported versions are 18 (for Progect database version
+        0.18) and 23 (for Progect database version 0.23).
 
-         $ tar zxvf Palm-Progect-2.0.0.tar.gz
+        Progect database version 0.18 was used all the way up until Progect
+        version 0.22, so if you saved a database with Progect 0.22, the
+        database will be a version 0.18 database.
 
-    3) configure and install it:
+  Text Conversion Options
+    --tabstop=n
+        Treat tabs as n columns wide (default is 8)
 
-         $ cd Palm-Progect-2.0.0
-         $ perl Makefile.PL
-         $ make
-         $ make test
-         # make install
+    --use-spaces
+        By default, "progconv" uses tabs to indent records. With this
+        "--use-spaces" option, it will use spaces instead, using "--tabstop"
+        spaces per indent level.
 
-For that final step ('make install'), you will have to be root.
+    --date-format
+        The input and output format for dates. You can have any text here so
+        long as it includes some combination of dd, mm, yy, yyyy. Using
+        words for months at this point is NOT supported.
 
-How to Install Perl Modules (on Windows)
-----------------------------------------
+        The default is yyyy/mm/dd, so nobody can accuse me of being Y2K
+        non-complient. If you want to use dd/mm/yy (which is how the Progect
+        program itself seems to currently export things on my Palm), then
+        you can use:
 
-   1) download the module distribution
+            --date-format=dd/mm/yy
 
-   2) unpack it into its own folder, using a program
-      like Windows Commander (http://www.wincmd.com/)
-      or WinZip (http://www.winzip.com).
+    --columns=n
+        For multiline descriptions and notes, progect will wrap text to fit
+        the screen. Use this option to tell how wide the screen is. The
+        default is 80. To disable wrapping, use "--columns=0"
 
-   3) copy all the Perl module files (*.pm) in the
-      distribution's 'lib' directory into your local Perl
-      library directory (e.g. C:\PERL\lib\site).
+  CSV Conversion Options
+    --csv-sep=c
+        Use character "c" as the csv separator (defaults to ";")
 
-      For Palm::Progect, you should end up with something like the
-      following directory structure:
+    --csv-eol-pc
+        Use "\r\n" as the csv line terminator (the default)
 
-          C:\PERL\lib\site\Palm\Progect.pm
-          C:\PERL\lib\site\Palm\Progect\Record.pm
-          C:\PERL\lib\site\Palm\Progect\Converter.pm
-          C:\PERL\lib\site\Palm\Progect\DB_18\Record.pm
-          ...
+    --csv-eol-unix
+        Use "\n" as the csv line terminator
 
-      Some module distributions do not have a 'lib' directory,
-      or they contain additional modules outside of the 'lib'
-      directory.  They should be installed as follows:
+    --csv-eol-mac
+        Use "\r" the csv line terminator
 
-      Distribution         File                Destination
-      ------------         ----                -----------
-      Class::Constructor   Constructor.pm      site\Class\Constructor.pm
+    --csv-quote-char=c
+        Use character "c" as the csv quote char (defaults to """)
 
-      p5-Palm              Palm\Address.pm     site\Palm\Address.pm
-                           Palm\Datebook.pm    site\Palm\Datebook.pm
-                           Palm\Mail.pm        site\Palm\Mail.pm
-                           Palm\Memo.pm        site\Palm\Memo.pm
-                           Palm\PDB.pm         site\Palm\PDB.pm
-                           Palm\Raw.pm         site\Palm\Raw.pm
-                           Palm\StdAppInfo.pm  site\Palm\StdAppInfo.pm
-                           Palm\ToDo.pm        site\Palm\ToDo.pm
+    --csv-date-format
+        The input and output format for dates in csv files. See
+        --date-format
 
-      (where 'site' is your local Perl library directory (e.g.
-      C:\PERL\lib\site))
+PROGCONV TEXT FORMAT
+    Here is a summary of the various types of records:
 
-   4) Finally, place any executable perl scripts in the distributions
-      into a directory in your path (e.g. C:\PERL\bin) so that they can
-      be run with perl's -S switch, e.g.:
+        [ ] action type
+        [x] completed action type
+        < > action type with todo link
+        <x> completed action type with todo link
 
-          perl -S progconv --help
+        [80%] progress type
+        [4/5] numeric type
 
-      Distribution         File                Destination
-      ------------         ----                -----------
-      Palm::Progect        bin\progconv        bin\progconv
+        . info type
 
-      p5-Palm              util\copydb         bin\copydb
-                           util\pdbdump        bin\pdbdump
+        [ ] [5] action type with priority
+        [ ] (15/7/2001) action type with date
 
-      (where 'bin' is your local Perl binary directory (e.g.
-      C:\PERL\bin), and assuming this directory is in your path)
+        [80%] [5] (15/7/2001) {category} progress type with priority and date and category
 
+        [80%] [5] (15/7/2001) {category} progress type with priority and date and category <<
+            Multi-Line note
+            for this item
+            >>
 
-Installing on Earlier Versions of Perl
---------------------------------------
+PROGCONV CSV FORMAT
+    The CSV format allows for basic import/export with spreadsheet programs.
+    The CSV file does not look like a tree structure; instead, there is a
+    "level" column, which indicates the indent level for the current row.
 
-If you are installing on Windows by manually copying files, you
-can skip this section.
+    The columns in the format are:
 
-On earlier versions of Perl (e.g. version 5.005), you should install
-Class::Accessor without using the cpan shell, by downloading it
-and running the standard:
+    level
+        The indent level of the record.
 
-    $ cd Class-Accessor-0.1.7
-    $ perl Makefile.PL
-    $ make
-    $ make test
-    # make install
+    description
+    priority
+        The priority of the record from 1 to 5, or 0 for no priority.
 
-During the install, you may read complaints that the 'base' module
-not being up to date.  Also, Class::Accessor will fail some of its tests.
+    isAction
+    isProgress
+    isNumeric
+    isInfo
+        Any record can have one (and only one) of the above types.
 
-These errors and warnings do not appear to be anything to worry about.
-Palm::Progect still seems to work fine and pass all of its own tests.
+        If you are going to change the type of a record, remember to set all
+        the other types to false:
 
-Checking for the Latest version of p5-palm
-------------------------------------------
-How to tell what version of p5-palm you have installed:
+            isAction isProgress isNumeric isInfo
+            0        0          0         1
 
-  * Even though the package version is 1.2.4, each file in the package
-    has it's own version number.
+    completed
+        Completed has different values depending upon the type of record.
+        For action items, it is either 1 or 0, for complete or not complete.
 
-  * The version of Palm/Raw.pm in p5-palm version 1.2.4 is actually 1.8
-    If your version of Palm/Raw.pm is equal to or greater than 1.8
-    then you should be fine.
+        For Progress items, it is a number between 1 and 100, indicating a
+        percentage.
 
-  * Look at the source to the file Palm/Raw.pm.  There should be a line
-    like:
-        $VERSION = sprintf "%d.%03d", '$Revision: 1.8 $ ' =~ m{(\d+)\.(\d+)};
+        For Numeric items it is a number between 1 and 100 indicating the
+        the integer percentage of the "numericActual" value divided by the
+        "numericLimit" value.
 
-    In the above example, the version number for Palm/Raw.pm is 1.8
+    numericActual
+        The numerator of a numeric record. If the numeric value of a record
+        is "4/5", then the "numericActual" value is 4.
 
-Documentation
--------------
+    numericLimit
+        The denominator of a numeric record. If the numeric value of a
+        record is "4/5", then the "numericLimit" value is 5.
 
-Help for the progconv utility is available with:
+    DateDue
+        This is a date in the format specified on the command line with the
+        "--csv-date-format" option
 
-    progconv --help
+    category
+    opened
+    description
+    note
 
-This will include help on any installed Converter modules.
+    Additionally, see the --csv-sep, --csv-eol-pc, --csv-eol-unix,
+    --csv-eol-mac and --csv-quote-char options.
 
-If you are upgrading from a previous version of Palm::Progect, you
-should have a look at upgrade_2.0.txt to see what has changed.
+BUGS and CAVEATS
+  Categories
+    "progconv" reads and writes categories properly from and to Progect
+    "PDB" files. As of version 0.25, Progect itself can read these
+    categories properly. (However version 0.25 has problems with preferences
+    - see below)
 
-There is detailed documentation included in this package.
-Much of it is in 'pod' format (shorthand for Perl's 'Plain old
-Documentation' format).
+    Versions of Progect earlier than 0.25 may have problems reading the
+    categories as saved by "progconv".
 
-You can convert all of the included pod docs to html in one step by
-using the included 'makedocs' script.  This will create a subdirectory
-called 'docs' and put all of the html files there.
+    This is due to the fact that "progconv" does not write the preferences
+    block correctly.
 
-On Unix run:
+    As a result, when you load into an older version of Progect a database
+    that you created with "progconv", You will get a warning that "Your
+    preferences have been deleted".
 
-    $ ./makedocs.sh
+    Progect will then reset the category list.
 
-On Windows run:
+    However, all of the records will still keep their references to the
+    deleted categories.
 
-    makedocs.bat
+    So, if you select "Edit Categories..." and recreate the categories in
+    the exact same order as they were before, the records will magically
+    return to their proper categories.
 
-The following is a summary of the documentation included in this package:
+    Again, these steps are only required when you are using a version of
+    Progect that is older than version 0.25.
 
-  File                             Format   Description
-  ----                             ------   -----------
-  README                           text     this file
-  Changes                          text     detailed changelog
+  Preferences
+    Preferences are not handled properly yet. They cannot be imported or
+    exported, and they are not read from the Progect database file.
 
-  upgrade_2.0.txt                  text     important user-visible
-                                            changes and
-                                            incompatibilities in v2.x of
-                                            Palm::Progect
+    Additionally, in Progect version 0.23 and earlier, when you load a
+    database created by "progconv" into Progect, you will get a warning that
+    "Your preferences have been deleted". The preferences for the database
+    will be reset to sensible defaults.
 
-  progconv                         pod      Overview of progconv and
-                                            options
+    In Progect version 0.25, you will not get this warning.
 
+  Two-digit Dates
+    Using a two digit date format will fail for dates before 1950 or after
+    2049 :).
 
-  hacking.txt                      text     Programmer's overview of
-                                            Palm::Progect Includes info
-                                            on how to roll your own
-                                            Converter modules
+AUTHOR
+    Michael Graham <mag-perl@occamstoothbrush.com>
 
-  Palm/Progect.pm                  pod      the Palm::Progect API
-  Palm/Progect/Record.pm           pod      Record objects
-  Palm/Progect/Prefs.pm            pod      Preferences object
-  Palm/Progect/Date.pm             pod      Date formating/parsing routines
+    Copyright (C) 2001 Michael Graham. All rights reserved. This program is
+    free software. You can use, modify, and distribute it under the same
+    terms as Perl itself.
 
-  Palm/Progect/Converter/Text.pm   pod      Details about Converting Progect
-                                            Databases to/from Text Format
-
-  Palm/Progect/Converter/CSV.pm    pod      Details about converting Progect
-                                            Databases to/from CSV Format
-
-  Palm/Progect/Converter.pm        pod      Converter delegator
-  Palm/Progect/VersionDelegator.pm pod      DB Driver delegator
-
-You can read individual pod documentation with the perldoc command:
-
-    perldoc progconv
-    perldoc Palm/Progect.pm
-
-You can convert the Pod to HTML using the pod2html
-command:
-
-    pod2html Palm/Progect/Converter/Text.pm > Text.html
-
-If that command doesn't work, try:
-
-    perl -S pod2html.pl Palm/Progect/Converter/Text.pm > Text.html
-
-
-Homepage
---------
-
+    The latest version of this program can be found on
     http://www.occamstoothbrush.com/perl/
 
-Author
-------
-Michael Graham <mag-perl@occamstoothbrush.com>
+SEE ALSO
+    http://progect.sourceforge.net/
 
-Copyright (C) 2001 Michael Graham.  All rights reserved.
-This program is free software.  You can use, modify,
-and distribute it under the same terms as Perl itself.
+    Palm::Progect
 
+    Palm::Progect::Converter::Text
+
+    Palm::Progect::Converter::CSV
+
+    Palm::PDB
+
+    Text::CSV_XS
 

@@ -162,6 +162,29 @@ sub _parse_raw_record {
             }
             elsif ($xb_type == XB_TYPE_Link_ToDo) {
                 # Don't handle this for now...
+                # my @todo_link_data;
+                # for (my $i = 0; $i < $xb_size; $i++) {
+                #     push @todo_link_data, unpack "x" . ($xb_offset + $i) . "C1", $record_data;
+                # }
+                #
+                # my @mapped_todo_link_data = map { chr $_ } @todo_link_data;
+                # print "todo_link_data:\n";
+                # print "[";
+                # print join "|", @todo_link_data;
+                # print "]\n";
+                # print "mapped_todo_link_data:\n";
+                # print "[";
+                # print join "|", @mapped_todo_link_data;
+                # print "]\n";
+
+                # Real way
+                my $todo_link_data = unpack "x$xb_offset a$xb_size", $record_data;
+
+                print "todo_link_data:\n";
+                print "[$todo_link_data]\n";
+
+                $self->todo_link_data($todo_link_data);
+
             }
             elsif ($xb_type == XB_TYPE_Link_LinkMaster) {
                 # Don't handle this for now...
@@ -451,6 +474,5 @@ sub _pack_raw_record {
 
     return $raw_record;
 }
-
 
 1;

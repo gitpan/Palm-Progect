@@ -4,7 +4,6 @@ use strict;
 use 5.005;
 use Cwd;
 
-use lib 'mlib';
 use Test::More tests => 3;
 
 require 't/utility.pl';

@@ -1,5 +1,14 @@
 Revision history for Perl extension Palm::Progect.
 
+[2.0.2] 2005/01/29
+    - Changed to Module::Build based installer
+    - Added prerequisite for Test::Harness and Test::More
+    - removed Test::* modules from test directory
+    - Fixed pod errors in Palm::Progect::Converter::LiteText
+    - fixed broken csv test
+    - Padded out categories to 16 (mainly to remove warnings about
+      undefined values, but it's probably more correct this way anyways)
+
 [2.0.1] 2002/06/01
     - Fixed a bug where dates in January did not get stored properly
       (thanks to Frank Meineke for spotting this one)

@@ -4,9 +4,7 @@ use strict;
 use 5.005;
 use Cwd;
 
-use lib 'mlib';
-
-use Test::More tests => 6;
+use Test::More tests => 4;
 
 BEGIN { use_ok 'Palm::Progect' }
 require 't/utility.pl';
@@ -24,7 +22,7 @@ my $progconv    = 'bin/progconv';
 my $infile_txt  = 't/infile.txt';
 my $outfile_pdb = 't/outfile_18.pdb';
 my $outfile_txt = 't/outfile.txt';
-my $infile_pdb  = 't/sample_18.pdb';
+my $infile_pdb  = 't/sample_23.pdb';
 
 write_sample_txt($infile_txt);
 
@@ -33,18 +31,8 @@ ok(!system(
     '--quiet',
     '--use-spaces', '--tabstop=4',
     '--date-format=dd/mm/yyyy',
-    $infile_pdb, $outfile_txt
-), 'executed progconv');
-
-ok(compare_text_files($infile_txt, $outfile_txt), 'pdb import');
-
-ok(!system(
-    $perl, $progconv,
-    '--quiet',
-    '--use-spaces', '--tabstop=4',
     '--output-version=18',
-    '--date-format=dd/mm/yyyy',
-    $infile_txt, $outfile_pdb
+    $infile_pdb, $outfile_pdb
 ), 'executed progconv');
 
 ok(!system(
@@ -52,8 +40,9 @@ ok(!system(
     '--quiet',
     '--use-spaces', '--tabstop=4',
     '--date-format=dd/mm/yyyy',
+    '--input-version=18',
     $outfile_pdb, $outfile_txt
 ), 'executed progconv');
 
-ok(compare_text_files($infile_txt, $outfile_txt), 'pdb import/export');
+ok(compare_text_files($infile_txt, $outfile_txt), 'pdb convert - v0.23 to v0.18');
 

@@ -212,15 +212,15 @@ sub write_sample_txt_with_tabs {
 sub write_sample_csv {
     my $filename = shift;
     my @lines = (
-        qq{level,priority,completed,isAction,isProgress,isNumeric,isInfo,hasToDo,numericActual,numericLimit,dateDue,category,opened,description,note},
-        qq{1,5,80,,1,,,,,,,One,,"alpha-Priority 5, progress 80%, cat one","Note for alpha"},
-        qq{1,1,0,,,1,,,5,20,,Two,,"Beta-priority 1,num 5/20,cat two",},
-        qq{2,,1,1,,,,,,,15/07/2001,,,"Bc1-no pri, action, date 15jun2001,no cat",},
-        qq{2,2,,,,,1,,,,,One,,"Bc2-pri2,info,nodate,cat one,note","Bc2 note\nBc2 note-line2"},
-        qq{1,1,1,1,,,,1,,,22/07/2001,Three,,"Gamma, pri1,action,todo link,date 22jul2001,cat three,note,complete,closed","Gamma note\nGamma note -line 2"},
-        qq{2,,1,1,,,,1,,,01/08/2001,,,"Gc1-action,todo link,1aug2001, complete",},
-        qq{1,,0,1,,,,,,,15/07/2001,,,"Delta,action,not complete",},
-        qq{1,,,,,,1,,,,15/01/2002,,,"item with January date",},
+        qq{level,priority,completed,isAction,isProgress,isNumeric,isInfo,hasToDo,numericActual,numericLimit,dateDue,category,opened,description,note,todo_link_data},
+        qq{1,5,80,,1,,,,,,,One,,"alpha-Priority 5, progress 80%, cat one","Note for alpha",},
+        qq{1,1,0,,,1,,,5,20,,Two,,"Beta-priority 1,num 5/20,cat two",,},
+        qq{2,,1,1,,,,,,,15/07/2001,,,"Bc1-no pri, action, date 15jun2001,no cat",,},
+        qq{2,2,,,,,1,,,,,One,,"Bc2-pri2,info,nodate,cat one,note","Bc2 note\nBc2 note-line2",},
+        qq{1,1,1,1,,,,1,,,22/07/2001,Three,,"Gamma, pri1,action,todo link,date 22jul2001,cat three,note,complete,closed","Gamma note\nGamma note -line 2",},
+        qq{2,,1,1,,,,1,,,01/08/2001,,,"Gc1-action,todo link,1aug2001, complete",,},
+        qq{1,,0,1,,,,,,,15/07/2001,,,"Delta,action,not complete",,},
+        qq{1,,,,,,1,,,,15/01/2002,,,"item with January date",,},
     );
 
     local *FH;

@@ -4,8 +4,6 @@ use strict;
 use 5.005;
 use Cwd;
 
-use lib 'mlib';
-
 BEGIN {
     eval {
         require Text::CSV_XS;

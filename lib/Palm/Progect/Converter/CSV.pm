@@ -192,6 +192,7 @@ my @CSV_Fields = qw(
     opened
     description
     note
+    todo_link_data
 );
 
 my %CSV_Field_Map = qw(
@@ -205,6 +206,7 @@ my %CSV_Field_Map = qw(
     category              category_name
     opened                is_opened
     note                  note
+    todo_link_data        todo_link_data
 );
 
 my @Accessors = qw(
