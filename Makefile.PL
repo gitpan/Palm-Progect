@@ -4,16 +4,17 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     'NAME'	        => 'Palm::Progect',
-    'VERSION_FROM'	=> 'Progect.pm', # finds $VERSION
+    'VERSION_FROM'	=> 'lib/Palm/Progect.pm', # finds $VERSION
     'PREREQ_PM'	    => {
-        # 'Palm::PDB'        => '1.19',
-        # 'Palm::StdAppInfo' => '1.11',
-        # 'Palm::Raw'        => '1.8',
-        'Palm::PDB'        => '1',
-        'Palm::StdAppInfo' => '1',
-        'Palm::Raw'        => '1',
-    },
+        'Palm::PDB'          => '1',
+        'Palm::StdAppInfo'   => '1',
+        'Palm::Raw'          => '1',
+        'CLASS'              => '0',
+        'Class::Accessor'    => '0',
+        'Class::Constructor' => '0',
+    },                              
     'EXE_FILES'     => [ 'bin/progconv' ],
+    'PMLIBDIRS'     => [ 'lib' ],
 );
 
 

@@ -4,11 +4,7 @@ use strict;
 use 5.005;
 use Cwd;
 
-my $Cwd;
-BEGIN { $Cwd = getcwd(); chdir('t') if -d 't' }
-END   { chdir($Cwd) }
-
-use lib '../mlib';
+use lib 'mlib';
 
 BEGIN {
     eval {
@@ -27,7 +23,7 @@ BEGIN {
 }
 
 BEGIN { use_ok 'Palm::Progect' }
-require 'utility.pl';
+require 't/utility.pl';
 
 # Note that this is edge testing rather than unit testing.
 # We are testing the functionality of the module as a whole.
@@ -39,12 +35,12 @@ require 'utility.pl';
 
 
 my $perl        = $^X;
-my $progconv    = '../bin/progconv';
-my $infile_csv  = 'infile.csv';
-my $infile_txt  = 'infile.txt';
-my $outfile_csv = 'outfile.csv';
-my $outfile_txt = 'outfile.txt';
-my $outfile_pdb = 'outfile.pdb';
+my $progconv    = 'bin/progconv';
+my $infile_csv  = 't/infile.csv';
+my $infile_txt  = 't/infile.txt';
+my $outfile_csv = 't/outfile.csv';
+my $outfile_txt = 't/outfile.txt';
+my $outfile_pdb = 't/outfile_23.pdb';
 
 write_sample_txt($infile_txt);
 write_sample_csv($infile_csv);
@@ -55,6 +51,8 @@ ok(!system(
     '--use-spaces', '--tabstop=4',
     '--csv-eol-pc',
     '--date-format=dd/mm/yyyy',
+    '--csv-date-format=dd/mm/yyyy',
+    '--csv-sep=,',
     $infile_txt, $outfile_csv
 ), 'executed progconv');
 
@@ -66,6 +64,9 @@ ok(!system(
     '--use-spaces', '--tabstop=4',
     '--csv-eol-pc',
     '--date-format=dd/mm/yyyy',
+    '--csv-date-format=dd/mm/yyyy',
+    '--date-format=dd/mm/yyyy',
+    '--csv-sep=,',
     $infile_csv, $outfile_txt
 ), 'executed progconv');
 

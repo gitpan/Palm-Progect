@@ -1,0 +1,12 @@
+TODO:
+
+* Fix Categories (2.0.?)
+
+* Load prefs in DB modules (2.1.?)
+
+* Import/Export prefs in Converter modules (2.?.?)
+
+* VersionDelegator to handle different versions for Prefs and Records
+  (e.g. Given version "30", it would delegate to Prefs v0.30 and
+  Records v0.23).  This will be necessary the next time the prefs
+  format changes but the Record format stays the same.

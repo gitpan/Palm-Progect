@@ -4,20 +4,16 @@ use strict;
 use 5.005;
 use Cwd;
 
-my $Cwd;
-BEGIN { $Cwd = getcwd(); chdir('t') if -d 't' }
-END   { chdir($Cwd) }
-
-use lib '../mlib';
+use lib 'mlib';
 use Test::More tests => 3;
 
-require 'utility.pl';
+require 't/utility.pl';
 
 
 my $perl        = $^X;
-my $progconv    = '../bin/progconv';
-my $infile_txt  = 'dot.test/infile.txt';
-my $outfile_txt = 'dot.test/outfile.txt';
+my $progconv    = 'bin/progconv';
+my $infile_txt  = 't/dot.test/infile.txt';
+my $outfile_txt = 't/dot.test/outfile.txt';
 
 mkdir 'dot.test', 0777;
 

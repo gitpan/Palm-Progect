@@ -13,7 +13,6 @@ The Palm::Progect bundle includes a command line utility called
 progconv, which converts back and forth between the Progect PDB format
 and a simple text representation:
 
-
     [x] Level 1 Todo item
         [10%] Child (progress)
             . Child of Child (informational)
@@ -23,66 +22,246 @@ and a simple text representation:
 
 This format is similar to the format that Progect's own built-in
 exporter uses.  However, progconv supports almost all of Progect's
-fields, including dates, categories, ToDo links and notes. See the
-included docs for notes.
+fields, including dates, priorities, categories, ToDo links and
+notes. See the included docs for notes.
 
 The progconv program also converts to and from CSV (Comma Separated
 Values) files, which is a format most useful for exchanging data with
 spreadsheets and databases.
 
+Users can write their own converters for new formats, and these
+converters will integrate into the progconv program.
+
+Version 2.0 of Palm::Progect is a complete rewrite with some new
+features.  See upgrade_2.0.txt for details.
+
+Installing
+----------
+First, install the prerequisite Perl Modules (see "Prerequisites",
+below). Next install the Palm::Progect module itself.
+
+If you don't know how to install Perl modules, see "How to Install Perl
+Modules" below.
+
 Prerequisites
 -------------
+All of the following required modules are available on CPAN
+(http://search.cpan.org/).  If you don't know how to install
+Perl modules, see "How to Install Perl Modules" below.
 
 1) p5-Palm (Palm::PDB)
 
    Andrew Arensburger's great suite of modules for manipulating
    palm database files.
 
-2) Text::CSV_XS
+3) CLASS
+4) Class::Accessor
+5) Class::Constructor
 
-   Only if you intend to import from or export to the CSV format.
+   These three modules provide some of the necessary object-oriented
+   'glue' that holds the Palm::Progect::* modules together.  The first
+   two are by Michael G. Schwern, the last is by me.
+
+   On earlier versions of Perl (e.g. version 5.005), special care will be
+   required to install Class::Accessor.  See below under "Installing on
+   Earlier Versions of Perl"
+
+6) Text::CSV_XS
+
+   This is only required if you intend to import from or export to
+   the CSV format.
 
 
-Installing
-----------
+How to Install Perl Modules (on Unix/Linux/etc)
+-----------------------------------------------
+You can use the 'cpan' command-line utility to install the modules (easy
+to use, but can be tricky to set up).
 
-On Unix systems install Palm::Progect as you would any other
-perl module:
+Or you can install the modules manually by doing the following:
 
-    perl Makefile.PL
-    make
-    make test
-    make install
+    1) download the module distribution
 
-To read the docs, type:
+    2) unpack it into its own folder, e.g.
 
-    perldoc Palm::Progect
-or:
+         $ tar zxvf Palm-Progect-2.0.0.tar.gz
+
+    3) configure and install it:
+
+         $ cd Palm-Progect-2.0.0
+         $ perl Makefile.PL
+         $ make
+         $ make test
+         # make install
+
+For that final step ('make install'), you will have to be root.
+
+How to Install Perl Modules (on Windows)
+----------------------------------------
+
+   1) download the module distribution
+
+   2) unpack it into its own folder, using a program
+      like Windows Commander (http://www.wincmd.com/)
+      or WinZip (http://www.winzip.com).
+
+   3) copy all the Perl module files (*.pm) in the
+      distribution's 'lib' directory into your local Perl
+      library directory (e.g. C:\PERL\lib\site).
+
+      For Palm::Progect, you should end up with something like the
+      following directory structure:
+
+          C:\PERL\lib\site\Palm\Progect.pm
+          C:\PERL\lib\site\Palm\Progect\Record.pm
+          C:\PERL\lib\site\Palm\Progect\Converter.pm
+          C:\PERL\lib\site\Palm\Progect\DB_18\Record.pm
+          ...
+
+      Some module distributions do not have a 'lib' directory,
+      or they contain additional modules outside of the 'lib'
+      directory.  They should be installed as follows:
+
+      Distribution         File                Destination
+      ------------         ----                -----------
+      Class::Constructor   Constructor.pm      site\Class\Constructor.pm
+
+      p5-Palm              Palm\Address.pm     site\Palm\Address.pm
+                           Palm\Datebook.pm    site\Palm\Datebook.pm
+                           Palm\Mail.pm        site\Palm\Mail.pm
+                           Palm\Memo.pm        site\Palm\Memo.pm
+                           Palm\PDB.pm         site\Palm\PDB.pm
+                           Palm\Raw.pm         site\Palm\Raw.pm
+                           Palm\StdAppInfo.pm  site\Palm\StdAppInfo.pm
+                           Palm\ToDo.pm        site\Palm\ToDo.pm
+
+      (where 'site' is your local Perl library directory (e.g.
+      C:\PERL\lib\site))
+
+   4) Finally, place any executable perl scripts in the distributions
+      into a directory in your path (e.g. C:\PERL\bin) so that they can
+      be run with perl's -S switch, e.g.:
+
+          perl -S progconv --help
+
+      Distribution         File                Destination
+      ------------         ----                -----------
+      Palm::Progect        bin\progconv        bin\progconv
+
+      p5-Palm              util\copydb         bin\copydb
+                           util\pdbdump        bin\pdbdump
+
+      (where 'bin' is your local Perl binary directory (e.g.
+      C:\PERL\bin), and assuming this directory is in your path)
+
+
+Installing on Earlier Versions of Perl
+--------------------------------------
+
+If you are installing on Windows by manually copying files, you
+can skip this section.
+
+On earlier versions of Perl (e.g. version 5.005), you should install
+Class::Accessor without using the cpan shell, by downloading it
+and running the standard:
+
+    $ cd Class-Accessor-0.1.7
+    $ perl Makefile.PL
+    $ make
+    $ make test
+    # make install
+
+During the install, you may read complaints that the 'base' module
+not being up to date.  Also, Class::Accessor will fail some of its tests.
+
+These errors and warnings do not appear to be anything to worry about.
+Palm::Progect still seems to work fine and pass all of its own tests.
+
+
+Documentation
+-------------
+
+Help for the progconv utility is available with:
+
+    progconv --help
+
+This will include help on any installed Converter modules.
+
+If you are upgrading from a previous version of Palm::Progect, you
+should have a look at upgrade_2.0.txt to see what has changed.
+
+There is detailed documentation included in this package.
+Much of it is in 'pod' format (shorthand for Perl's 'Plain old
+Documentation' format).
+
+You can convert all of the included pod docs to html in one step by
+using the included 'makedocs' script.  This will create a subdirectory
+called 'docs' and put all of the html files there.
+
+On Unix run:
+
+    $ ./makedocs.sh
+
+On Windows run:
+
+    makedocs.bat
+
+The following is a summary of the documentation included in this package:
+
+  File                             Format   Description
+  ----                             ------   -----------
+  README                           text     this file
+  Changes                          text     detailed changelog
+
+  upgrade_2.0.txt                  text     important user-visible
+                                            changes and
+                                            incompatibilities in v2.x of
+                                            Palm::Progect
+
+  progconv                         pod      Overview of progconv and
+                                            options
+
+
+  hacking.txt                      text     Programmer's overview of
+                                            Palm::Progect Includes info
+                                            on how to roll your own
+                                            Converter modules
+
+  Palm/Progect.pm                  pod      the Palm::Progect API
+  Palm/Progect/Record.pm           pod      Record objects
+  Palm/Progect/Prefs.pm            pod      Preferences object
+  Palm/Progect/Date.pm             pod      Date formating/parsing routines
+
+  Palm/Progect/Converter/Text.pm   pod      Details about Converting Progect
+                                            Databases to/from Text Format
+
+  Palm/Progect/Converter/CSV.pm    pod      Details about converting Progect
+                                            Databases to/from CSV Format
+
+  Palm/Progect/Converter.pm        pod      Converter delegator
+  Palm/Progect/VersionDelegator.pm pod      DB Driver delegator
+
+You can read individual pod documentation with the perldoc command:
+
     perldoc progconv
+    perldoc Palm/Progect.pm
 
+You can convert the Pod to HTML using the pod2html
+command:
 
-On systems without make (e.g. Windows), first copy Progect.pm
-into your local library directory (e.g. C:\PERL\lib\site\Palm)
-and then place progconv somewhere in your PATH, so you can
-run it via:
+    pod2html Palm/Progect/Converter/Text.pm > Text.html
 
-    perl -S progconv ...
+If that command doesn't work, try:
 
-To read the docs, run them through the pod2html program:
+    perl -S pod2html.pl Palm/Progect/Converter/Text.pm > Text.html
 
-    perl -S pod2html.pl Progect.pm > Progect.html
-    perl -S pod2html.pl progconv > progconv.html
-
-And then open the html files in your web browser.
 
 Homepage
 --------
 
-    http://www.occamstoothbrush.com/perl
+    http://www.occamstoothbrush.com/perl/
 
 Author
 ------
-
 Michael Graham <mag-perl@occamstoothbrush.com>
 
 Copyright (C) 2001 Michael Graham.  All rights reserved.

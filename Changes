@@ -1,5 +1,33 @@
 Revision history for Perl extension Palm::Progect.
 
+[2.0.0] 2002/04/28
+    ** This Major internal rewrite adds new features and creates
+       a few incompatibilities. See upgrade_2.0.txt for details. **
+
+    - Progect db version 0.23 now supported
+
+    - Can convert back and forth between 0.18 and 0.23 database formats
+
+    - Converters (for import/export) made modular.  Users can add own
+      converters to the system and they will integrate automatically
+      with progconv.
+
+    - priorities now working
+
+    - COMPATIBILITY CHANGE: --date-format now split into:
+         --date-format      (for Text converter only)
+         --csv-date-format  (for CSV converter only)
+
+    - countless API changes to Palm::Progect
+
+    - new guide to the internals (hacking.txt)
+
+    - now generates sensible prefs defaults
+
+[1.9.x] 2002/04/xx
+    - unreleased testing versions, leading up to 2.0.0 release
+    - Thanks to Mark Allman for testing and feedback
+
 [1.0.2] 2001/09/29
     - progconv couldn't handle paths with dots in them (thanks to Kris Gale
       for the bugreport and patch)

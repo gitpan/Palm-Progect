@@ -23,7 +23,7 @@ my $progconv             = 'bin/progconv';
 my $infile_txt           = 't/infile.txt';
 my $outfile_txt          = 't/outfile.txt';
 
-write_sample_txt($infile_txt);
+write_sample_txt($infile_txt, 1);
 
 ok(!system(
     $perl, $progconv,
@@ -33,6 +33,6 @@ ok(!system(
     $infile_txt, $outfile_txt
 ), 'executed progconv');
 
-ok(compare_text_files($infile_txt, $outfile_txt), 'text import/export');
+ok(compare_text_files($infile_txt, $outfile_txt, 1), 'preserve comments in notes');
 
 
