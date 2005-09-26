@@ -1,5 +1,12 @@
 Revision history for Perl extension Palm::Progect.
 
+[2.0.3] 2005/09/26
+    - Added Pod tests
+    - Updated docs for Record.pm
+    - CPANTS found that 'use strict' was missing in some modules in the
+      distribution.  Fixed this.
+    - Updated copyright dates in pod
+
 [2.0.2] 2005/01/29
     - Changed to Module::Build based installer
     - Added prerequisite for Test::Harness and Test::More

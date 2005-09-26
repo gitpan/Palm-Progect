@@ -1,5 +1,6 @@
 
 package Palm::Progect::Prefs;
+use strict;
 
 =head1 NAME
 
@@ -41,7 +42,7 @@ csv format:
 
 Michael Graham E<lt>mag-perl@occamstoothbrush.comE<gt>
 
-Copyright (C) 2002 Michael Graham.  All rights reserved.
+Copyright (C) 2002-2005 Michael Graham.  All rights reserved.
 This program is free software.  You can use, modify,
 and distribute it under the same terms as Perl itself.
 

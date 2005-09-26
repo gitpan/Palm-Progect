@@ -18,7 +18,7 @@ use Palm::Progect::Converter;
 
 use vars '$VERSION';
 
-$VERSION = '2.0.2';
+$VERSION = '2.0.3';
 
 =head1 NAME
 
@@ -228,7 +228,16 @@ sub load_db {
     # of the appinfo block.
 
     my $appinfo = {};
-    &Palm::StdAppInfo::parse_StdAppInfo($appinfo, $self->_palm_pdb->{'appinfo'});
+
+    if ($self->_palm_pdb->{'appinfo'}) {
+        &Palm::StdAppInfo::parse_StdAppInfo($appinfo, $self->_palm_pdb->{'appinfo'});
+    }
+    else {
+        $appinfo = {
+            'categories' => [],
+            'other'      => pack('C', 23),
+        };
+    }
 
     my $version = unpack 'C', $appinfo->{'other'};
     print STDERR "Progect database is version $version\n" unless $self->options->{'quiet'};
@@ -703,7 +712,7 @@ or after 2049 :).
 
 Michael Graham E<lt>mag-perl@occamstoothbrush.comE<gt>
 
-Copyright (C) 2002 Michael Graham.  All rights reserved.
+Copyright (C) 2002-2005 Michael Graham.  All rights reserved.
 This program is free software.  You can use, modify,
 and distribute it under the same terms as Perl itself.
 

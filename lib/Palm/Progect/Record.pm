@@ -43,8 +43,8 @@ sub set_categories {
 
     my @categories = @_;
 
-    if (!@categories and $categories[0] !~ /^\s*unfiled\s*$/i ) {
-        unshift @categories, 'Unfiled';
+    if (!@categories or $categories[0]{'name'} !~ /^\s*unfiled\s*$/i ) {
+        unshift @categories, { 'name' => 'Unfiled' };
     }
 
     %Categories = ();
@@ -173,6 +173,28 @@ Each L<Palm::Progect> object contains a list of records in its C<records> method
 
 Each record is a C<Palm::Progect::Record> object.
 
+=head1 CLASS METHODS
+
+=over 4
+
+=item set_categories
+
+Class method to set all available category names at once,
+using the Palm::StdAppinfo format of a list of hashrefs
+in the form of:
+
+    { name => 'Some cat', id => 7, renamed => 'who cares' }
+
+=item get_categories
+
+Class method to get all available categories
+using the Palm::StdAppinfo format of a list of hashrefs
+in the form of:
+
+    { name => 'Some cat', id => 7, renamed => 'who cares' }
+
+=back
+
 =head1 METHODS
 
 =over 4
@@ -285,7 +307,7 @@ be created.
 
 Michael Graham E<lt>mag-perl@occamstoothbrush.comE<gt>
 
-Copyright (C) 2002 Michael Graham.  All rights reserved.
+Copyright (C) 2002-2005 Michael Graham.  All rights reserved.
 This program is free software.  You can use, modify,
 and distribute it under the same terms as Perl itself.
 

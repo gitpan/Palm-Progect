@@ -1,6 +1,6 @@
---- #YAML:1.0
+---
 name: Palm-Progect
-version: 2.0.2
+version: 2.0.3
 author:
   - Michael Graham <mag-perl@occamstoothbrush.com>
 abstract: Handler for Palm Progect databases.
@@ -16,7 +16,7 @@ requires:
 provides:
   Palm::Progect:
     file: lib/Palm/Progect.pm
-    version: 2.0.2
+    version: 2.0.3
   Palm::Progect::Constants:
     file: lib/Palm/Progect/Constants.pm
   Palm::Progect::Converter:
@@ -43,4 +43,4 @@ provides:
     file: lib/Palm/Progect/Record.pm
   Palm::Progect::VersionDelegator:
     file: lib/Palm/Progect/VersionDelegator.pm
-generated_by: Module::Build version 0.2607
+generated_by: Module::Build version 0.2611
