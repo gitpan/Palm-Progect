@@ -1,5 +1,8 @@
 Revision history for Perl extension Palm::Progect.
 
+[2.0.4] 2005/10/02
+    - Pod tests were mistakenly excluded from distribution
+
 [2.0.3] 2005/09/26
     - Added Pod tests
     - Updated docs for Record.pm

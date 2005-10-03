@@ -1,6 +1,6 @@
 ---
 name: Palm-Progect
-version: 2.0.3
+version: 2.0.4
 author:
   - Michael Graham <mag-perl@occamstoothbrush.com>
 abstract: Handler for Palm Progect databases.
@@ -16,7 +16,7 @@ requires:
 provides:
   Palm::Progect:
     file: lib/Palm/Progect.pm
-    version: 2.0.3
+    version: 2.0.4
   Palm::Progect::Constants:
     file: lib/Palm/Progect/Constants.pm
   Palm::Progect::Converter:

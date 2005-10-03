@@ -18,7 +18,7 @@ use Palm::Progect::Converter;
 
 use vars '$VERSION';
 
-$VERSION = '2.0.3';
+$VERSION = '2.0.4';
 
 =head1 NAME
 
